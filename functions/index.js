@@ -39,14 +39,14 @@ const Actions = {
 
 // AIRMAP
 const AIRMAP_URL = "https://api.airmap.com/status/v2/point/?latitude=<LAT>&longitude=<LONG>&weather=true&types=airport,controlled_airspace,special_use_airspace,school,tfr";
-const APP_KEY = "<REPLACE_ME>";
+const APP_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoiY3JlZGVudGlhbHxkUW5XTGJnSG9OWE41WmNlNVI1WEVUeXpiZDNCIiwiYXBwbGljYXRpb25faWQiOiJhcHBsaWNhdGlvbnw4UnBSMktkVXhMUE80UFNKcUt3UnpVNXhPUXc4Iiwib3JnYW5pemF0aW9uX2lkIjoiZGV2ZWxvcGVyfEtkNzJLZXVZTEQzbVJVNDZNNk9RdW9YTDJ4bCIsImlhdCI6MTUxODkyNDg1MH0.ycVBhUCro7EyNrUzWa-mpl7kjuiAXGFlWo4fmo8OFMM";
 var DEFAULT_LAT;
 var DEFAULT_LONG;
 var DEFFAULT_CITY;
 
 // Google Map API
 const STATIC_MAPS_ADDRESS = 'https://maps.googleapis.com/maps/api/staticmap';
-const STATIC_MAPS_SIZE = '400x400';
+const STATIC_MAPS_SIZE = '600x400';
 const staticMapsURL = url.parse(STATIC_MAPS_ADDRESS);
 staticMapsURL.query = {
   key: config.maps.key,
@@ -136,6 +136,15 @@ const responses = {
       <break time="1s"/>
       We are not able to get the flight information for you at the moment.
       Ask me again later.
+    </speak>
+  `,
+  coarseLocation: city => ssml`
+    <speak>
+      We found you in ${city}. <break time="500ms"/> But you might be on a speaker device.
+      <break time="500ms"/>
+      You location is not precise enough to give good safety recommendation.
+	  <break time="500ms"/>
+	  Consider to use a phone with GSP. Good luck.
     </speak>
   `,
   permissionReason: 'To locate where you are',
@@ -307,13 +316,7 @@ class FlyDrone {
       if (requestedPermission === this.permissions.DEVICE_COARSE_LOCATION) {
         // If we requested coarse location, it means that we're on a speaker device.
         this.DEFAULT_CITY = this.app.getDeviceLocation().city;
-  	  return this.cityToCoordniates(this.DEFAULT_CITY).then(geo => {
-  	  	  this.DEFAULT_LAT = geo.latitude;
-  		  this.DEFAULT_LONG = geo.longitude;
-  		  console.log("calling from aprox location subroutine");
-  		  this.fetchAirMap();
-		  
-  	  });
+  	    this.app.tell(responses.coarseLocation(this.DEFAULT_CITY));
       }
       if (requestedPermission === this.permissions.DEVICE_PRECISE_LOCATION) {
         // If we requested precise location, it means that we're on a phone.
