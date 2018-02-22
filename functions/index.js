@@ -100,7 +100,7 @@ const ssml = (template, ...inputs) => template.reduce((out, str, i) => i
 ).trim().replace(/\s+/g, ' ').replace(/ </g, '<').replace(/> /g, '>');
 
 const COLOR_CODE = {
-	"red" : "Flight is strictly regulated in this area",
+	"red" : "Flight is strictly restricted in this area",
 	"orange" : "Flight is regulated in this area and requires authorization to fly",
 	"yellow" : "There are known advisories in this area and caution should be used",
 	"green" :"There are no known advisories in this area"
