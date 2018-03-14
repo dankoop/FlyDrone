@@ -39,7 +39,7 @@ const Actions = {
 
 // AIRMAP
 const AIRMAP_URL = "https://api.airmap.com/status/v2/point/?latitude=<LAT>&longitude=<LONG>&weather=true&types=airport,controlled_airspace,special_use_airspace,school,tfr";
-const APP_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoiY3JlZGVudGlhbHxkUW5XTGJnSG9OWE41WmNlNVI1WEVUeXpiZDNCIiwiYXBwbGljYXRpb25faWQiOiJhcHBsaWNhdGlvbnw4UnBSMktkVXhMUE80UFNKcUt3UnpVNXhPUXc4Iiwib3JnYW5pemF0aW9uX2lkIjoiZGV2ZWxvcGVyfEtkNzJLZXVZTEQzbVJVNDZNNk9RdW9YTDJ4bCIsImlhdCI6MTUxODkyNDg1MH0.ycVBhUCro7EyNrUzWa-mpl7kjuiAXGFlWo4fmo8OFMM";
+const APP_KEY = "<TOKEN>";
 var DEFAULT_LAT;
 var DEFAULT_LONG;
 var DEFFAULT_CITY;
@@ -50,7 +50,7 @@ const STATIC_MAPS_SIZE = '600x400';
 const staticMapsURL = url.parse(STATIC_MAPS_ADDRESS);
 staticMapsURL.query = {
   key: config.maps.key,
-  size: STATIC_MAPS_SIZE
+  size: STATIC_MAPS_SIZE,
 };
 
 /**
@@ -60,8 +60,10 @@ staticMapsURL.query = {
  * @param {string} city
  * @param {string} speech
  */
-const locationResponse = (city, speech) => {
+const locationResponse = (city, lat, long, speech) => {
   staticMapsURL.query.center = city;
+  staticMapsURL.query.markers = "color:red|" + lat + "," + long;
+  console.log(staticMapsURL.query);
   const mapViewURL = url.format(staticMapsURL);
   return new RichResponse()
     .addSimpleResponse(speech)
@@ -100,55 +102,67 @@ const ssml = (template, ...inputs) => template.reduce((out, str, i) => i
 ).trim().replace(/\s+/g, ' ').replace(/ </g, '<').replace(/> /g, '>');
 
 const COLOR_CODE = {
-	"red" : "Flight is strictly restricted in this area",
-	"orange" : "Flight is regulated in this area and requires authorization to fly",
-	"yellow" : "There are known advisories in this area and caution should be used",
-	"green" :"There are no known advisories in this area"
+	"red" : "is strictly prohibited. Please change location and check again",
+	"orange" : "is restricted. Action is required to get authorization to fly your drone in this area",
+	"yellow" : "is restricted. Please check advisories and use caution when flying your drone",
+	"green" :"has no restrictions, but please use caution when flying your drone"
 }
 
 const responses = {
   /** @param {string} city 
 	* @param {string} color
 	*/
-  sayLocation: (city, color, def, weather, wind) => locationResponse(city, ssml`
+  sayLocation: (city, lat, long, def, weather, wind) => locationResponse(city, lat, long, ssml`
 	      <speak>
-	        The flight code at your location ${city} is ${color}.<break time="500ms"/>${def}.<break time="500ms"/>
-	        Weather condition is ${weather} and wind speed is ${wind} <sub alias="kilometer per hour">km/h</sub>.
+	        Here are the results: <break time="500ms"/>
+	        Drone flight at ${city} ${def}.<break time="500ms"/>
+	        The current weather is ${weather} with wind speeds of ${wind} <sub alias="kilometer per hour">km/h</sub>.
 	      </speak>
 	    `),
   greetUser: ssml`
     <speak>
       Welcome to <sub alias="Fly Drone">FlyDrone</sub>!
       <break time="500ms"/>
-  	  I can find air control and weather information for you.
-      Would you prefer use your location or a different address?
+  	  I can help get you safety and weather information before flying your drone.
+	  <break time="250ms"/>
+      Do you want me to use your location, or do you want to check an address?
     </speak>
   `,
   /** @param {string} input */
   unhandledDeepLinks: input => ssml`
     <speak>
-      We will build more deep link soon, please try it later!
+      I'm sorry, I didn't catch that by ${input}. Please try again. 
     </speak>
   `,
   flyDroneError: ssml`
     <speak>
       Oops!
       <break time="1s"/>
-      We are not able to get the flight information for you at the moment.
-      Ask me again later.
+      Something went wrong, and I couldn't get the information you asked for.
+	  <break time="250ms"/>
+      Please use another source of flight restriction information before deciding whether it's safe to fly
     </speak>
   `,
   coarseLocation: city => ssml`
     <speak>
-      We found you in ${city}. <break time="500ms"/> But you might be on a speaker device.
-      <break time="500ms"/>
-      You location is not precise enough to give good safety recommendation.
+      I wasn't able to find your precise location using your device.
+	  <break time="250ms"/>
+      Your device's current location ${city} is not precise enough to return accurate flight restriction information.
 	  <break time="500ms"/>
-	  Consider to use a phone with GSP. Good luck.
+	  Please use a specific address instead.
     </speak>
   `,
-  permissionReason: 'To locate where you are',
-  notificationText: 'See you where you are...'
+  noCoarseLocation: ssml`
+    <speak>
+      Oops!
+      <break time="1s"/>
+      I don't see a location set in your device. 
+	  <break time="250ms"/>
+      But you can try again with a specific address.
+    </speak>
+  `,
+  permissionReason: 'To find your device location',
+  notificationText: 'To find your location...'
 };
 
 /**
@@ -162,7 +176,7 @@ class FlyDrone {
    * @param {ExpressResponse} res
    */
   constructor (req, res) {
-    console.log('Headers', JSON.stringify(req.headers, null, 2));
+    //console.log('Headers', JSON.stringify(req.headers, null, 2));
     console.log('Body', JSON.stringify(req.body, null, 2));
 
     this.app = new DialogflowApp({
@@ -219,6 +233,7 @@ class FlyDrone {
             }
           }
         }
+		console.log("CCould not parse city name from Google Maps results");
         reject(new Error('Could not parse city name from Google Maps results'));
       }
     ));
@@ -248,6 +263,7 @@ class FlyDrone {
 			  const longitude = gloc.lng;
 			  return resolve({latitude, longitude});
           }
+		  console.log("Could not obtain coornidate from Google Maps results.");
           reject(new Error('Could not obtain coornidate from Google Maps results'));
         }
       ));
@@ -255,6 +271,7 @@ class FlyDrone {
 
   fetchAirMap() {
 	  if (!this.DEFAULT_CITY && (!this.DEFAULT_LAT || !this.DEFAULT_LONG)) {
+		  console.log("cannot resolve location.");
 		  return Promise.reject(new Error('We cannot resolve the location.'));
 	  }
 	const url = AIRMAP_URL.replace("<LAT>", this.DEFAULT_LAT).replace("<LONG>", this.DEFAULT_LONG);
@@ -269,7 +286,7 @@ class FlyDrone {
 		if (!error && response.statusCode == 200) {
 			var info = JSON.parse(body);
 			console.log(info.data.advisory_color + ", " + COLOR_CODE[info.data.advisory_color] + ", " + info.data.weather.condition + ", "+ info.data.weather.wind.speed);
-			return this.app.tell(responses.sayLocation(this.DEFAULT_CITY, info.data.advisory_color, COLOR_CODE[info.data.advisory_color],  info.data.weather.condition, info.data.weather.wind.speed.toString()));
+			return this.app.tell(responses.sayLocation(this.DEFAULT_CITY, this.DEFAULT_LAT, this.DEFAULT_LONG, COLOR_CODE[info.data.advisory_color],  info.data.weather.condition, info.data.weather.wind.speed.toString()));
 		}
 		console.log(error);
 		console.log(response.statusCode);
@@ -310,22 +327,30 @@ class FlyDrone {
   
   [Actions.HANDLE_DATA] () {
       if (!this.app.isPermissionGranted()) {
+		console.log("ermission not granted by user.");
         return Promise.reject(new Error('Permission not granted'));
       }
       const requestedPermission = this.data.requestedPermission;
       if (requestedPermission === this.permissions.DEVICE_COARSE_LOCATION) {
         // If we requested coarse location, it means that we're on a speaker device.
         this.DEFAULT_CITY = this.app.getDeviceLocation().city;
-  	    this.app.tell(responses.coarseLocation(this.DEFAULT_CITY));
+		if (typeof this.app.getDeviceLocation().city == 'undefined' || !this.DEFAULT_CITY) {
+			console.log("no coarse location set for this device.");
+			this.app.tell(responses.noCoarseLocation);
+		}
+		else {
+			console.log("log coarse location at [" + this.DEFAULT_CITY + "]");
+  	    	this.app.tell(responses.coarseLocation(this.DEFAULT_CITY));
+		}
       }
-      if (requestedPermission === this.permissions.DEVICE_PRECISE_LOCATION) {
+      else if (requestedPermission === this.permissions.DEVICE_PRECISE_LOCATION) {
         // If we requested precise location, it means that we're on a phone.
         // Because we will get only latitude and longitude, we need to reverse geocode
         // to get the city.
         const { coordinates } = this.app.getDeviceLocation();
   	    this.DEFAULT_LAT= coordinates.latitude;
   	    this.DEFAULT_LONG = coordinates.longitude;
-  	    console.log("caching exact location: " + this.DEFAULT_LAT + "," + this.DEFAULT_LONG  + "]");
+  	    console.log("log exact location: [" + this.DEFAULT_LAT + "," + this.DEFAULT_LONG  + "]");
         return this.coordinatesToCity(coordinates.latitude, coordinates.longitude)
           .then(city => {
             this.DEFAULT_CITY = city;
@@ -333,7 +358,10 @@ class FlyDrone {
   		  this.fetchAirMap();
           });
       }
-      return Promise.reject(new Error('Unrecognized permission'));
+	  else {
+		console.log("Unrecognized permission.");
+      	return Promise.reject(new Error('Unrecognized permission'));
+	  }
   }
 }
 
