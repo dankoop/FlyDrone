@@ -37,9 +37,9 @@ const Actions = {
   CUSTOM_ADDRESS: 'address.address-fallback'
 };
 
-// AIRMAP
-const AIRMAP_URL = "https://api.airmap.com/status/v2/point/?latitude=<LAT>&longitude=<LONG>&weather=true&types=airport,controlled_airspace,special_use_airspace,school,tfr";
-const APP_KEY = "<TOKEN>";
+// AIRNOW
+const AIRNOW_URL = "http://www.airnowapi.org/aq/observation/latLong/current/?format=application/json&latitude=<LAT>&longitude=<LONG>&distance=50&API_KEY=<KEY>";
+const APP_KEY = "";
 var DEFAULT_LAT;
 var DEFAULT_LONG;
 var DEFFAULT_CITY;
@@ -233,7 +233,7 @@ class FlyDrone {
             }
           }
         }
-		console.log("CCould not parse city name from Google Maps results");
+		console.log("Could not parse city name from Google Maps results");
         reject(new Error('Could not parse city name from Google Maps results'));
       }
     ));
@@ -274,13 +274,10 @@ class FlyDrone {
 		  console.log("cannot resolve location.");
 		  return Promise.reject(new Error('We cannot resolve the location.'));
 	  }
-	const url = AIRMAP_URL.replace("<LAT>", this.DEFAULT_LAT).replace("<LONG>", this.DEFAULT_LONG);
+	const url = AIRNOW_URL.replace("<LAT>", this.DEFAULT_LAT).replace("<LONG>", this.DEFAULT_LONG).replace("<KEY>", this.API_KEY);
 	console.log(url);
 	var options = {
-	  url: url,
-	  headers: {
-	    'X-API-Key': APP_KEY
-	  }
+	  url: url
 	};
 	Request(options, (error, response, body) => {
 		if (!error && response.statusCode == 200) {
