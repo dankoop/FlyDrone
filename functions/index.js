@@ -115,39 +115,39 @@ const responses = {
   sayLocation: (city, lat, long, def, weather, wind) => locationResponse(city, lat, long, ssml`
 	      <speak>
 	        Here are the results: <break time="500ms"/>
-	        Drone flight at ${city} ${def}.<break time="500ms"/>
-	        The current weather is ${weather} with wind speeds of ${wind} <sub alias="kilometer per hour">km/h</sub>.
+	        Air Quality at ${city} is ${def}.<break time="500ms"/>
+	        The Air Quality Index is ${aqi}. <sub alias="Particulate Matter 2.5">PM2.5</sub>.
 	      </speak>
 	    `),
   greetUser: ssml`
     <speak>
-      Welcome to <sub alias="Fly Drone">FlyDrone</sub>!
+      Welcome to Air Quality Assistant!
       <break time="500ms"/>
-  	  I can help get you safety and weather information before flying your drone.
-	  <break time="250ms"/>
-      Do you want me to use your location, or do you want to check an address?
+  	  We can get you information about Air Quality in your area from the United States EPA, Air Now Program
+	  <break time="500ms"/>
+      Do you want us to use your current location, or do you want to check an address?
     </speak>
   `,
   /** @param {string} input */
   unhandledDeepLinks: input => ssml`
     <speak>
-      I'm sorry, I didn't catch that by ${input}. Please try again. 
+      We're sorry, we didn't understand ${input}. Please try again. 
     </speak>
   `,
   flyDroneError: ssml`
     <speak>
       Oops!
       <break time="1s"/>
-      Something went wrong, and I couldn't get the information you asked for.
+      Something went wrong, and we couldn't get the information you asked for.
 	  <break time="250ms"/>
-      Please use another source of flight restriction information before deciding whether it's safe to fly
+      Please try again or check www.airnow.gov for more information.
     </speak>
   `,
   coarseLocation: city => ssml`
     <speak>
-      I wasn't able to find your precise location using your device.
+      We weren't able to find your precise location using your device.
 	  <break time="250ms"/>
-      Your device's current location ${city} is not precise enough to return accurate flight restriction information.
+      Your device's current location ${city} is not precise enough to return accurate information.
 	  <break time="500ms"/>
 	  Please use a specific address instead.
     </speak>
@@ -156,7 +156,7 @@ const responses = {
     <speak>
       Oops!
       <break time="1s"/>
-      I don't see a location set in your device. 
+      We didn't see a location set in your device. 
 	  <break time="250ms"/>
       But you can try again with a specific address.
     </speak>
@@ -327,7 +327,7 @@ class FlyDrone {
   
   [Actions.HANDLE_DATA] () {
       if (!this.app.isPermissionGranted()) {
-		console.log("ermission not granted by user.");
+		console.log("Permission not granted by user.");
         return Promise.reject(new Error('Permission not granted'));
       }
       const requestedPermission = this.data.requestedPermission;
