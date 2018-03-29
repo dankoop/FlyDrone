@@ -1,7 +1,6 @@
-# Actions on Google: FlyDrone using Node.js
+# Actions on Google: Air Quality Assistant (AQ-Assistant)
 
-The FlyDrone Google Actions can help you determine if your current location
-or any given address is allowed to fly drone. 
+The aq-assistant Google Actions can help...
 
 Backend data here uses: https://developers.airmap.com
 
